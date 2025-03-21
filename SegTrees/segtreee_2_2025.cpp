@@ -7,6 +7,8 @@ using namespace std;
 
 struct node {
     long long sum;
+    long long push = 0;
+    bool is_pushed = true;
     int l, r;
     node* l_son = nullptr, * r_son = nullptr;
 };
@@ -43,6 +45,20 @@ void build_2(const vector<int>& data, int l, int r, vector<int>& tree, int id) {
 }
 
 
+void relax(node * root) {
+    if (root->is_pushed) return;
+    root->sum = root->push * (root->r - root->l);
+    if ((root->r - root->l) != 1) {
+        root->r_son->push = root->push;
+        root->r_son->is_pushed = false;
+        root->l_son->push = root->push;
+        root->l_son->is_pushed = false;
+    }
+    root->push = 0;
+    root->is_pushed = true;
+}
+
+
 
 
 
@@ -50,7 +66,9 @@ void build_2(const vector<int>& data, int l, int r, vector<int>& tree, int id) {
 
 long long get_val(node* root, int L, int R) {
     if (!root) return 0;
+    relax(root);
     if (root->l >= L && root->r <= R) {
+
         return root->sum;
     }
     else if (root->l >= R || root->r <= L) {
@@ -79,6 +97,7 @@ void upd(node * root, int ind, int new_val) {
     if (!root || root->l >  ind|| root->r <= ind) {
         return;
     }
+    relax(root);
     if (root->r - root->l == 1) {
         root->sum = new_val;
         return;
@@ -88,6 +107,46 @@ void upd(node * root, int ind, int new_val) {
         root->sum = root->l_son->sum + root->r_son->sum;
     }
 }
+
+
+void upd_2(vector<int> & tree, int ind, int new_val, int l, int r, int i = 1) {
+    if (l > ind || r <= ind) {
+        return;
+    }
+    if (r - l == 1) {
+        tree[i] = new_val;
+        return;
+    }
+    int m = (l + r) / 2;
+    upd_2(tree, ind, new_val, l, m, i * 2);
+    upd_2(tree, ind, new_val, m, r, 1 + i * 2);
+    tree[i] = tree[2*i] + tree[2*i + 1];
+    return;
+}
+
+
+
+
+
+void group_upd(node * root, int L, int R, int new_val) {
+    if (!root) return;
+    if (root->l >= L && root->r <= R) {
+        relax(root);
+        root->push = new_val;
+        root->is_pushed = false;
+        return;
+    } 
+    if (root->l >= R || root->r <= L) {
+        return;
+    }
+    relax(root);
+    group_upd(root->l_son, L, R, new_val);
+    group_upd(root->r_son, L, R, new_val);
+    relax(root->l_son);
+    relax(root->r_son);
+    root->sum = root->l_son->sum + root->r_son->sum;
+}
+
 
 
 
@@ -122,7 +181,7 @@ int main()
     }
     cout << "done";
 
-    upd(root, 3, 90);
+    group_upd(root, 1, 3, 90);
     cin >> q;
     for (int i = 0; i < q; ++i) {
         int L, R;
