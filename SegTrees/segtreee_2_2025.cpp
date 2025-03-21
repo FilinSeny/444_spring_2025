@@ -74,6 +74,21 @@ int get_val_2(const vector<int>& data, int l, int r, int L, int R, vector<int>& 
 }
 
 
+void upd(node * root, int ind, int new_val) {
+
+    if (!root || root->l >  ind|| root->r <= ind) {
+        return;
+    }
+    if (root->r - root->l == 1) {
+        root->sum = new_val;
+        return;
+    } else {
+        upd(root->l_son, ind, new_val);
+        upd(root->r_son, ind, new_val);
+        root->sum = root->l_son->sum + root->r_son->sum;
+    }
+}
+
 
 
 int main()
@@ -105,6 +120,15 @@ int main()
         L--;
         cout << get_val(root, L, R) << ' ';
     }
-    ///cout << "done";
+    cout << "done";
+
+    upd(root, 3, 90);
+    cin >> q;
+    for (int i = 0; i < q; ++i) {
+        int L, R;
+        cin >> L >> R;
+        L--;
+        cout << get_val(root, L, R) << ' ';
+    }
     return 0;
 }
