@@ -5,68 +5,67 @@
 using namespace std;
 
 int n = 4;
+int inf = 1e9+7;
 int m = 4;
 vector<vector<long long>> tree_2d(4*n, vector<long long> (4*m));
 
 
 
-void build_col(vector<vector<long long>> & data, int lx, int rx, int j, int ly = 0, int ry = n, int i = 1) {
+void build_y_1dtree(const vector<vector<long long>> & data, const int & lx,const int  & rx, const int & j,
+                                                        int ly, int ry, int i = 1) {
+    
     if (ry - ly == 1) {
         if (rx - lx == 1) {
-            tree_2d[i][j] = data[ly][lx];
+            tree_2d[i][j] = data[ly][lx]; ///в случае 0-го слоя в обоях деревьях
         } else {
-            tree_2d[i][j] = tree_2d[i][2*j] + tree_2d[i][2 * j + 1];
+            ///в случае 0-го слоя в y-дереве
+            tree_2d[i][j] = max(tree_2d[i][j * 2], tree_2d[i][j * 2 + 1]);
+            ///ходим в деревья меньшей полщины по x (предыдущий слой внешенго дерева) но той же толщины по y
         }
-        return;
+    } else {
+        int my = (ly + ry) / 2;
+        build_y_1dtree(data, lx, rx, j, ly, my, i * 2);
+        build_y_1dtree(data, lx, rx, j, my, ry, i * 2 + 1);
+        tree_2d[i][j] = max(tree_2d[i * 2][j], tree_2d[i * 2 + 1][j]);
     }
-    int my = (ly + ry) / 2;
-    build_col(data, lx, rx, j, ly, my, i * 2);
-    build_col(data, lx, rx, j, my, ry, i * 2 + 1);
-    tree_2d[i][j] = tree_2d[i * 2][j] + tree_2d[i * 2 + 1][j];
 }
 
 
 
-void buld_colums( vector<vector<long long>> & data, int lx = 0, int rx = m, int j = 1) {
+void build_x_2dtree(const vector<vector<long long>> & data, int lx, int rx, int j = 1) { ///строим дерево отрезкоко во х-координате элементами ДО являются ДО по столбцам различной толщины(толщина 2^номер слоя)
     if (rx - lx > 1) {
-        buld_colums(data, lx, (lx + rx) / 2, j *2);
-        buld_colums(data, (lx + rx) / 2, rx, j * 2 + 1);
+        build_x_2dtree(data, lx, (lx + rx) / 2, j * 2);
+        build_x_2dtree(data, (lx + rx) / 2, rx, j * 2 + 1);
     }
-
-    build_col(data, lx, rx, j, 0, n, 1);
+    build_y_1dtree(data, lx, rx, j, 0, n, 1); //строим верщину - одномерное дерево "толщины rx-lx"
 }
 
 
-
-long long sum_in_colum(int Lx, int Rx, int Ly, int Ry,
-                         int lx, int rx, int j,
-                         int ly = 0, int ry = 0, int i = 1)
-{
-    if (ly >= Ry || ry <= Ly)
-    {
-        return 0;
+long long max_y_1d_tree(int Lx, int Rx, int Ly, int Ry, 
+                        int lx, int rx, int j,
+                        int ly, int ry, int i = 1) {
+    if (ly >= Ry || ry <= Ly) {
+        return -INF;
     }
     if (ly >= Ly && ry <= Ry) {
         return tree_2d[i][j];
     }
-    return sum_in_colum(Lx, Rx, Ly, Ry, lx, rx, j, ly, (ly + ry) / 2, i * 2) +
-    sum_in_colum(Lx, Rx, Ly, Ry, lx, rx, j, (ly + ry) / 2, ry, i * 2 + 1);
-
+    return max_y_1d_tree(Lx, Rx, Ly, Ry, lx, rx, j, ly, (ly + ry) / 2, i * 2) +
+    max_y_1d_tree(Lx, Rx, Ly, Ry, lx, rx, j, (ly + ry) / 2, ry, i * 2 + 1);
 }
 
 
-
-long long sum_of_clolums(int Lx, int Rx, int Ly, int Ry,
-                         int lx = 0, int rx = n - 1, int j = 1) {
+long long max_x_2d_tree(int Lx, int Rx, int Ly, int Ry, int lx, int rx, int j = 1) {
     if (lx >= Rx || rx <= Lx) {
-        return 0;
+        return -INF;
     }
     if (lx >= Lx && rx <= Rx) {
-        return sum_in_colum(Lx, Rx, Ly, Ry, lx, rx, j, 0, n, 1);
+        return max_y_1d_tree(Lx, Rx, Ly, Ry, lx, rx, j, 0, n, 1);
     }
-    return sum_of_clolums(Lx, Rx, Ly, Ry, lx, (rx + lx) / 2, j * 2) +
-    sum_of_clolums(Lx, Rx, Ly, Ry, (lx + rx) / 2, rx, j * 2 + 1);
+    return max_x_2d_tree(Lx, Rx, Ly, Ry, lx, (rx + lx) / 2, j * 2) +
+    max_x_2d_tree(Lx, Rx, Ly, Ry, (lx + rx) / 2, rx, j * 2 + 1);
 }
+
 
 
 int main()
@@ -79,7 +78,7 @@ int main()
     }
 
 
-    buld_colums(data, 0, m, 1);
+    build_x_2dtree(data, 0, m, 1);
 
 
     for (int i = 0; i < tree_2d.size(); ++i) {
